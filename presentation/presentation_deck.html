@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShieldPay - Board Presentation: Real-Time Fraud Detection Platform</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --text: #c9d1d9;
+      --text-bright: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      padding: 16px 32px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 20px;
+      color: var(--text-bright);
+      font-weight: 600;
+    }
+    .badge {
+      background: #1f6feb26;
+      color: var(--accent);
+      border: 1px solid #1f6feb;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      max-width: 1100px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s ease;
+    }
+    .slide.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    h3 {
+      color: var(--accent);
+      font-size: 18px;
+      margin-bottom: 24px;
+      font-weight: 400;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .card {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .card h4 {
+      color: var(--text-bright);
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .card p {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .stat {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .stat.green { color: var(--accent-green); }
+    .stat.red { color: var(--accent-red); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #0d1117;
+      color: var(--text-bright);
+    }
+    footer {
+      padding: 16px 32px;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn {
+      background: #238636;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn.secondary {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn:hover { opacity: 0.9; }
+    .page-indicator {
+      font-size: 14px;
+      color: #8b949e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ShieldPay - Real-Time Fraud Detection Platform</h1>
+    <span class="badge">Board of Directors Presentation</span>
+  </header>
+
+  <main>
+    <!-- Slide 1 -->
+    <div class="slide active" id="s1">
+      <h2>Transforming Fraud Prevention at ShieldPay</h2>
+      <h3>Responding to the Q3 2025 Fraud Crisis with Event-Driven Microservices</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="stat red">+340%</div>
+          <h4>Fraud Spike Crisis</h4>
+          <p>Losses reached ₹53 Cr in Q3 due to synthetic IDs, carding breaches, and 15-minute batch gaps.</p>
+        </div>
+        <div class="card">
+          <div class="stat green">&lt; 100ms</div>
+          <h4>Real-Time Latency</h4>
+          <p>Sub-100ms p99 authorization decision SLA on critical payment paths.</p>
+        </div>
+        <div class="card">
+          <div class="stat green">96.2%</div>
+          <h4>Fraud Recall Rate</h4>
+          <p>Tri-layer engine combining deterministic rules, ML anomaly detection, and graph analytics.</p>
+        </div>
+        <div class="card">
+          <div class="stat">0.38%</div>
+          <h4>False Positive Rate</h4>
+          <p>Reduced customer friction by over 80% compared to legacy monolith baselines.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" id="s2">
+      <h2>The Board Perspectives Matrix</h2>
+      <h3>Addressing Strategic Concerns Across Leadership</h3>
+      <div class="grid">
+        <div class="card">
+          <h4>Chief Technology Officer (CTO)</h4>
+          <p>10 cleanly bounded microservices, polyglot persistence, zero shared database locks, elastic horizontal scale to 50,000 TPS.</p>
+        </div>
+        <div class="card">
+          <h4>Chief Risk Officer (CRO)</h4>
+          <p>Multi-model ML ensemble, 500+ dynamic rules, Neo4j graph fraud rings, and auditable TreeSHAP decision explainability.</p>
+        </div>
+        <div class="card">
+          <h4>VP of Engineering</h4>
+          <p>Autonomous team ownership (3-5 devs per service), automated CI/CD, canary releases, and comprehensive runbooks.</p>
+        </div>
+        <div class="card">
+          <h4>Head of Compliance</h4>
+          <p>Immutable Merkle-tree audit journal, automated RBI ₹1 Lakh FMR-1 reporting, and GDPR crypto-shredding compliance.</p>
+        </div>
+        <div class="card">
+          <h4>Chief Financial Officer (CFO)</h4>
+          <p>₹148 Cr 3-year net ROI, 3.8-month payback period, and 63% reduction in transaction infrastructure cost.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" id="s3">
+      <h2>The Tri-Layer Detection Engine</h2>
+      <h3>Comprehensive Defense-in-Depth Architecture</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Detection Layer</th>
+            <th>Technology Stack</th>
+            <th>Primary Threat Covered</th>
+            <th>Latency (p99)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Deterministic Rule Engine</strong></td>
+            <td>Java 21 / Spring Boot 3 + Redis 7</td>
+            <td>Carding, velocity surges, impossible travel, sanctioned entities</td>
+            <td>&lt; 25 ms</td>
+          </tr>
+          <tr>
+            <td><strong>2. ML Anomaly Detection</strong></td>
+            <td>Python / ONNX Runtime + Feast</td>
+            <td>Zero-day spending anomalies, non-linear fraud patterns</td>
+            <td>&lt; 18 ms</td>
+          </tr>
+          <tr>
+            <td><strong>3. Graph Relationship Analysis</strong></td>
+            <td>Java / Quarkus + Neo4j Enterprise</td>
+            <td>Organized fraud syndicates, synthetic identity rings, triangulation</td>
+            <td>&lt; 40 ms</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide" id="s4">
+      <h2>Decision Matrix & Configurable Thresholds</h2>
+      <h3>Translating Composite Scores (0-1000) into Instant Actions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Composite Risk Score</th>
+            <th>Decision Action</th>
+            <th>Enforcement SLA</th>
+            <th>Operational Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--accent-green)">0 – 199</strong></td>
+            <td><strong>AUTO-APPROVE</strong></td>
+            <td>&lt; 100 ms</td>
+            <td>Normal frictionless transaction clearing.</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent)">200 – 599</strong></td>
+            <td><strong>STEP-UP AUTH</strong></td>
+            <td>&lt; 5 seconds</td>
+            <td>Dispatches SMS OTP / in-app biometric challenge.</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#e3b341">600 – 799</strong></td>
+            <td><strong>MANUAL REVIEW</strong></td>
+            <td>&lt; 4 hours</td>
+            <td>Routed to fraud analyst investigation queue.</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent-red)">800 – 1000</strong></td>
+            <td><strong>AUTO-DECLINE</strong></td>
+            <td>&lt; 100 ms</td>
+            <td>Transaction blocked; card frozen; alert dispatched.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide" id="s5">
+      <h2>Financial Return on Investment (CFO Model)</h2>
+      <h3>Projected 3-Year Value Creation & Payback</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="stat green">₹172.5 Cr</div>
+          <h4>Fraud Losses Prevented</h4>
+          <p>Projected 3-year reduction in gross fraud write-offs.</p>
+        </div>
+        <div class="card">
+          <div class="stat">₹24.5 Cr</div>
+          <h4>Cloud & Infrastructure</h4>
+          <p>Kubernetes, Kafka, Redis, and multi-region infrastructure costs.</p>
+        </div>
+        <div class="card">
+          <div class="stat green">₹148.0 Cr</div>
+          <h4>Net 3-Year ROI</h4>
+          <p>704% overall return on architecture investment.</p>
+        </div>
+        <div class="card">
+          <div class="stat green">3.8 Mos</div>
+          <h4>Capital Payback Period</h4>
+          <p>Rapid amortization driven by instant fraud loss prevention.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <button class="btn secondary" id="prevBtn" onclick="moveSlide(-1)">Previous</button>
+    <span class="page-indicator" id="slideNum">Slide 1 of 5</span>
+    <button class="btn" id="nextBtn" onclick="moveSlide(1)">Next</button>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const indicator = document.getElementById('slideNum');
+
+    function updateView() {
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === currentSlide));
+      indicator.textContent = `Slide ${currentSlide + 1} of ${slides.length}`;
+      document.getElementById('prevBtn').disabled = (currentSlide === 0);
+      document.getElementById('nextBtn').disabled = (currentSlide === slides.length - 1);
+    }
+
+    function moveSlide(direction) {
+      currentSlide = Math.min(Math.max(currentSlide + direction, 0), slides.length - 1);
+      updateView();
+    }
+    updateView();
+  </script>
+</body>
+</html>

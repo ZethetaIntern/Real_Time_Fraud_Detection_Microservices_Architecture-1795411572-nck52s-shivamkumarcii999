@@ -1,0 +1,9 @@
+apiVersion: v2
+name: fraud-detection-platform
+description: Production Helm chart for ShieldPay Real-Time Fraud Detection Microservices Architecture
+type: application
+version: 2.4.0
+appVersion: "2.4.0"
+maintainers:
+  - name: ShieldPay Architecture Team
+    email: architecture@shieldpay.com

@@ -1,0 +1,18 @@
+graph TD
+    subgraph RiskScoringService["Risk Scoring Service (C4 Level 3)"]
+        DECISION_GW[Scatter-Gather Orchestrator\n(Invokes Rule, ML, Graph engines)]
+        SIGNAL_AGG[Weighted Signal Aggregator\n(Score = 0.4*Rule + 0.35*ML + 0.25*Graph)]
+        POLICY_MAT[Threshold Policy Decision Matrix\n(Approve / Challenge / Review / Decline)]
+        EXPLAIN_SYNTH[Explainability Synthesizer\n(Combines rules, SHAP & graph hops)]
+        KAFKA_PUB[Kafka Decision Producer\n(Emits to fraud.decisions)]
+        FALLBACK_HDLR[Degraded Fallback Circuit Handler\n(Handles engine timeouts/outages)]
+        AUDIT_DISPATCH[Audit Event Dispatcher\n(Publishes to fraud.audit.events)]
+    end
+
+    DECISION_GW --> SIGNAL_AGG
+    SIGNAL_AGG --> POLICY_MAT
+    DECISION_GW -.->|On Timeout| FALLBACK_HDLR
+    FALLBACK_HDLR --> POLICY_MAT
+    POLICY_MAT --> EXPLAIN_SYNTH
+    EXPLAIN_SYNTH --> KAFKA_PUB
+    EXPLAIN_SYNTH --> AUDIT_DISPATCH

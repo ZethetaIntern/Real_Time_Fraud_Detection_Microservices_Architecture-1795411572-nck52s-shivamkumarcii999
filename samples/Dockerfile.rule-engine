@@ -1,0 +1,33 @@
+# Multi-Stage Distroless Dockerfile for Rule Engine Service (Java 21 / Spring Boot 3)
+# Stage 1: Build & Package
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /workspace
+
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+
+RUN ./mvnw dependency:go-offline -B
+
+COPY src src
+RUN ./mvnw clean package -DskipTests
+
+# Stage 2: Distroless Java Runtime
+FROM gcr.io/distroless/java21-debian12:nonroot
+
+LABEL maintainer="ShieldPay Rules Team <rules@shieldpay.com>"
+LABEL service="rule-engine-service"
+LABEL version="2.4.0"
+
+WORKDIR /app
+
+COPY --from=builder /workspace/target/rule-engine-service.jar /app/app.jar
+
+USER 1000:1000
+
+EXPOSE 8080 9090
+
+ENV JAVA_OPTS="-XX:+UseZGC -XX:+ZGenerational -XX:MaxRAMPercentage=75.0 -XshowSettings:vm"
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

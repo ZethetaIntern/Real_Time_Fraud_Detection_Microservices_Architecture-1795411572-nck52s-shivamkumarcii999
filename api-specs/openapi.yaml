@@ -1,0 +1,439 @@
+openapi: 3.0.3
+info:
+  title: ShieldPay Real-Time Fraud Detection Platform API
+  description: External-facing RESTful API exposed through Kong API Gateway for high-throughput payment transaction ingestion, risk scoring inquiry, fraud case investigation, rule configuration, and analytics metrics.
+  version: 1.0.0
+  contact:
+    name: ShieldPay Architecture Team
+    email: architecture@shieldpay.com
+servers:
+  - url: https://api.shieldpay.internal/api/v1
+    description: Production API Gateway Endpoint
+
+paths:
+  /transactions:
+    post:
+      summary: Submit a transaction for real-time fraud evaluation
+      description: Ingests, enriches, and evaluates a payment transaction in real-time across deterministic rules, ML anomaly detection, and graph analysis within a sub-100ms SLA.
+      operationId: submitTransaction
+      security:
+        - OAuth2ClientCredentials:
+            - transactions:write
+        - ApiKeyAuth: []
+      parameters:
+        - name: X-Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionSubmissionRequest'
+      responses:
+        '200':
+          description: Fraud evaluation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionEvaluationResponse'
+        '400':
+          description: Invalid request payload schema or Luhn check failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit quota exceeded
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal processing failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transactions/{id}/risk-score:
+    get:
+      summary: Retrieve cached risk decision and explainability for a transaction
+      operationId: getTransactionRiskScore
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Risk decision and explainability details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionEvaluationResponse'
+        '404':
+          description: Transaction not found
+
+  /cases:
+    get:
+      summary: List fraud investigation cases
+      operationId: listFraudCases
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, IN_REVIEW, CONFIRMED_FRAUD, FALSE_POSITIVE, CLOSED]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [P1_CRITICAL, P2_HIGH, P3_MEDIUM, P4_LOW]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Paginated case list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+
+  /cases/{id}/decision:
+    put:
+      summary: Submit human-in-the-loop analyst verdict on a fraud case
+      operationId: updateCaseDecision
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseDecisionUpdateRequest'
+      responses:
+        '200':
+          description: Case resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseRecord'
+
+  /rules:
+    get:
+      summary: Retrieve active fraud rules
+      operationId: listRules
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active rule set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleListResponse'
+    post:
+      summary: Author candidate fraud rule
+      operationId: createRule
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleDefinition'
+      responses:
+        '201':
+          description: Rule created in DRAFT status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleDefinition'
+
+  /dashboard/metrics:
+    get:
+      summary: Fetch real-time aggregated fraud dashboard statistics
+      operationId: getDashboardMetrics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aggregated real-time metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetricsResponse'
+
+components:
+  securitySchemes:
+    OAuth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.shieldpay.internal/oauth/token
+          scopes:
+            transactions:write: Ingest payment authorizations
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TransactionSubmissionRequest:
+      type: object
+      required:
+        - transaction_id
+        - card_number
+        - amount
+        - currency
+        - merchant_id
+        - mcc
+        - channel
+        - timestamp
+      properties:
+        transaction_id:
+          type: string
+          example: "tx_9984182941"
+        card_number:
+          type: string
+          pattern: '^[0-9]{15,19}$'
+          example: "4111222233334444"
+        cardholder_id:
+          type: string
+          example: "cust_881920"
+        amount:
+          type: number
+          format: double
+          example: 45000.00
+        currency:
+          type: string
+          example: "INR"
+        merchant_id:
+          type: string
+          example: "M-77491"
+        mcc:
+          type: string
+          example: "7995"
+        channel:
+          type: string
+          enum: [POS, ECOM, ATM, UPI, MOBILE_APP]
+          example: "ECOM"
+        ip_address:
+          type: string
+          example: "103.21.45.67"
+        device_fingerprint:
+          type: string
+          example: "dev_fp_9a8b7c6d5e"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-11-20T07:45:00Z"
+
+    TransactionEvaluationResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        decision:
+          type: string
+          enum: [AUTO_APPROVE, STEP_UP_AUTHENTICATION, MANUAL_REVIEW_QUEUE, AUTO_DECLINE]
+        composite_risk_score:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          example: 845
+        execution_time_ms:
+          type: number
+          example: 18.4
+        rule_score:
+          type: integer
+          example: 900
+        ml_score:
+          type: number
+          example: 0.82
+        graph_score:
+          type: integer
+          example: 850
+        explainability:
+          $ref: '#/components/schemas/DecisionExplainability'
+
+    DecisionExplainability:
+      type: object
+      properties:
+        triggered_rules:
+          type: array
+          items:
+            type: string
+        top_ml_features:
+          type: array
+          items:
+            type: object
+            properties:
+              feature:
+                type: string
+              attribution_value:
+                type: number
+        graph_evidence:
+          type: object
+          properties:
+            degrees_to_fraud:
+              type: integer
+            community_suspicion_score:
+              type: number
+            shared_nodes:
+              type: array
+              items:
+                type: string
+
+    CaseRecord:
+      type: object
+      properties:
+        case_id:
+          type: string
+        transaction_id:
+          type: string
+        risk_score:
+          type: integer
+        priority:
+          type: string
+          enum: [P1_CRITICAL, P2_HIGH, P3_MEDIUM, P4_LOW]
+        status:
+          type: string
+          enum: [OPEN, IN_REVIEW, CONFIRMED_FRAUD, FALSE_POSITIVE, CLOSED]
+        assigned_analyst:
+          type: string
+        notes:
+          type: string
+
+    CaseListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseRecord'
+
+    CaseDecisionUpdateRequest:
+      type: object
+      required:
+        - decision
+        - notes
+      properties:
+        decision:
+          type: string
+          enum: [CONFIRMED_FRAUD, FALSE_POSITIVE]
+        notes:
+          type: string
+        initiate_chargeback:
+          type: boolean
+          default: false
+        permanent_card_block:
+          type: boolean
+          default: false
+
+    RuleDefinition:
+      type: object
+      required:
+        - rule_id
+        - rule_name
+        - category
+        - severity
+        - conditions
+        - action
+      properties:
+        rule_id:
+          type: string
+          example: "RULE_VEL_001"
+        rule_name:
+          type: string
+          example: "Rapid Card Velocity Spike"
+        category:
+          type: string
+        severity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        conditions:
+          type: object
+        action:
+          type: object
+
+    RuleListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleDefinition'
+
+    DashboardMetricsResponse:
+      type: object
+      properties:
+        current_tps:
+          type: number
+        transactions_today:
+          type: integer
+        fraud_amount_blocked_inr:
+          type: number
+        fraud_detection_rate:
+          type: number
+        false_positive_rate:
+          type: number
+        p99_latency_ms:
+          type: number
+
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

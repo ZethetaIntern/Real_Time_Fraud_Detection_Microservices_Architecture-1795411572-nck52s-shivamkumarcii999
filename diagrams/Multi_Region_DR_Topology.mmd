@@ -1,0 +1,27 @@
+graph TB
+    subgraph Route53["Global DNS & Health Checks (AWS Route 53)"]
+        DNS[Global DNS Failover Routing\nHealth check interval: 10s, fail threshold: 3]
+    end
+
+    subgraph MumbaiRegion["Primary Region: Mumbai (ap-south-1) - Active Active (100% Traffic)"]
+        K8S_MUM["EKS Production Cluster (3 Availability Zones)"]
+        KAFKA_MUM[("Apache Kafka Primary Cluster\n(3 Brokers, RF=3, min.isr=2)")]
+        PG_MUM[("PostgreSQL 16 Primary Ledger\n(3-Node Synchronous Patroni Raft)")]
+        REDIS_MUM[("Redis Enterprise Active\n(6 Masters + 6 Replicas)")]
+        NEO_MUM[("Neo4j Enterprise Clustered\n(3 Core Members)")]
+    end
+
+    subgraph SingaporeRegion["Disaster Recovery Region: Singapore (ap-southeast-1) - Hot Standby"]
+        K8S_SIN["EKS Standby Cluster\n(Pre-provisioned minimal pods)"]
+        KAFKA_SIN[("Apache Kafka DR Cluster\n(Offset-translated Mirror)")]
+        PG_SIN[("PostgreSQL 16 Standby Replica\n(Hot Standby Read Replica)")]
+        REDIS_SIN[("Redis Enterprise Standby Replica\n(CRDT Active-Active WAN Sync)")]
+        NEO_SIN[("Neo4j Standby Read Replica")]
+    end
+
+    DNS -->|Primary 100% Route| K8S_MUM
+    DNS -.->|Automated Failover on 3 Health Probe Failures| K8S_SIN
+
+    KAFKA_MUM == Kafka MirrorMaker 2 (Asynchronous WAN Replication) ==> KAFKA_SIN
+    PG_MUM == Asynchronous Streaming WAL Physical Replication ==> PG_SIN
+    REDIS_MUM == Asynchronous Active-Active Bidirectional CRDT ==> REDIS_SIN

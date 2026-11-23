@@ -1,0 +1,44 @@
+global:
+  environment: "production"
+  region: "ap-south-1"
+
+transactionIngestion:
+  replicaCount: 6
+  image:
+    repository: "shieldpay/transaction-ingestion-service"
+    tag: "2.4.0"
+    pullPolicy: "IfNotPresent"
+  resources:
+    limits:
+      cpu: "4000m"
+      memory: "4Gi"
+    requests:
+      cpu: "1000m"
+      memory: "1Gi"
+  hpa:
+    enabled: true
+    minReplicas: 6
+    maxReplicas: 32
+    targetCPUUtilizationPercentage: 65
+
+ruleEngine:
+  replicaCount: 8
+  image:
+    repository: "shieldpay/rule-engine-service"
+    tag: "2.4.0"
+  resources:
+    limits:
+      cpu: "6000m"
+      memory: "6Gi"
+    requests:
+      cpu: "2000m"
+      memory: "2Gi"
+
+kafka:
+  bootstrapServers: "kafka-1.shieldpay.internal:9092,kafka-2.shieldpay.internal:9092,kafka-3.shieldpay.internal:9092"
+
+redis:
+  clusterHost: "redis-cluster.shieldpay.internal:6379"
+
+neo4j:
+  uri: "bolt+s://neo4j.shieldpay.internal:7687"

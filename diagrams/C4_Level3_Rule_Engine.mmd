@@ -1,0 +1,21 @@
+graph TD
+    subgraph RuleEngineService["Rule Engine Service (C4 Level 3)"]
+        GRPC_SRV[gRPC Evaluation Server\n(RuleEngineService.Evaluate)]
+        RULE_MGT[Rule Management REST Controller\n(CRUD, Versioning, Rollback)]
+        RULE_PARSER[YAML/JSON Rule AST Parser\n(Compiles condition trees)]
+        RULE_CACHE[In-Memory Compiled Rule Cache\n(AtomicReference / Zero garbage lock)]
+        EVAL_ENGINE[Condition Evaluator Engine\n(Short-circuit boolean evaluator)]
+        TEMPORAL_AGG[Temporal Window Aggregator\n(Redis Sorted Sets ZADD/ZCARD)]
+        ACTION_EXEC[Action & Delta Score Executor\n(Computes rule score & tags)]
+        PROM_METRICS[Prometheus Latency & Trigger Exporter]
+    end
+
+    RULE_MGT --> RULE_PARSER
+    RULE_PARSER --> RULE_CACHE
+    GRPC_SRV --> EVAL_ENGINE
+    RULE_CACHE --> EVAL_ENGINE
+    EVAL_ENGINE <--> TEMPORAL_AGG
+    EVAL_ENGINE --> ACTION_EXEC
+    ACTION_EXEC --> PROM_METRICS
+    ACTION_EXEC --> GRPC_SRV
+    TEMPORAL_AGG <-->|ZSET Lua Script| REDIS[(Redis Velocity Cluster)]

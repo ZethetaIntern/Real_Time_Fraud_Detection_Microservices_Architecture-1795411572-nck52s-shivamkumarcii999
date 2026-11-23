@@ -1,0 +1,47 @@
+groups:
+  - name: shieldpay-fraud-alerts
+    rules:
+      - alert: TransactionPipelineDowntime
+        expr: rate(http_requests_total{status=~"5.."}[2m]) / rate(http_requests_total[2m]) > 0.01
+        for: 1m
+        labels:
+          severity: P1
+        annotations:
+          summary: "Transaction ingestion pipeline 5xx error rate exceeded 1%"
+          runbook_url: "https://wiki.shieldpay.internal/ops/runbooks/P1_PipelineDowntime"
+
+      - alert: FraudDetectionRateDegraded
+        expr: fraud:detection_rate:1h < 0.80
+        for: 10m
+        labels:
+          severity: P1
+        annotations:
+          summary: "Global fraud detection rate dropped below 80%"
+          runbook_url: "https://wiki.shieldpay.internal/ops/runbooks/P1_DetectionRateDrop"
+
+      - alert: KafkaConsumerLagCritical
+        expr: sum by (consumergroup, topic) (kafka_consumergroup_lag{topic="fraud.transactions.raw"}) > 10000
+        for: 3m
+        labels:
+          severity: P2
+        annotations:
+          summary: "Kafka consumer lag exceeded 10,000 on raw transactions"
+          runbook_url: "https://wiki.shieldpay.internal/ops/runbooks/P2_ConsumerLag"
+
+      - alert: TransactionLatencySLABreached
+        expr: histogram_quantile(0.99, sum(rate(transaction_duration_seconds_bucket[5m])) by (le)) > 0.200
+        for: 5m
+        labels:
+          severity: P2
+        annotations:
+          summary: "Transaction authorization p99 latency breached 200ms"
+          runbook_url: "https://wiki.shieldpay.internal/ops/runbooks/P2_LatencyBreach"
+
+      - alert: ModelDataDriftWarning
+        expr: ml_feature_population_stability_index > 0.25
+        for: 1h
+        labels:
+          severity: P3
+        annotations:
+          summary: "ML feature drift detected (PSI > 0.25)"
+          runbook_url: "https://wiki.shieldpay.internal/ops/runbooks/P3_ModelDrift"

@@ -1,0 +1,53 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": null,
+  "panels": [
+    {
+      "title": "Active Open Fraud Cases by Priority",
+      "type": "bargauge",
+      "targets": [
+        { "expr": "sum by (priority) (case_management_active_cases)", "legendFormat": "{{priority}}" }
+      ],
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Analyst Queue Utilization & Load",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (analyst_id) (case_assigned_active_count)", "legendFormat": "{{analyst_id}}" }
+      ],
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
+    },
+    {
+      "title": "Mean Time to Investigate & Resolve (MTTI Minutes)",
+      "type": "stat",
+      "targets": [
+        { "expr": "avg(case_resolution_time_seconds) / 60", "legendFormat": "MTTI (mins)" }
+      ],
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
+    },
+    {
+      "title": "Case Outcome Distribution (Confirmed Fraud vs False Positive)",
+      "type": "piechart",
+      "targets": [
+        { "expr": "sum by (outcome) (rate(case_resolved_total[24h]))", "legendFormat": "{{outcome}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }
+    },
+    {
+      "title": "Chargeback Win Rate via Representment (%)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(chargeback_dispute_won_total[30d])) / sum(rate(chargeback_dispute_total[30d])) * 100", "legendFormat": "Win Rate %" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["case-management", "operations", "investigation"],
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "ShieldPay - Case Management & Operations Dashboard",
+  "version": 1
+}

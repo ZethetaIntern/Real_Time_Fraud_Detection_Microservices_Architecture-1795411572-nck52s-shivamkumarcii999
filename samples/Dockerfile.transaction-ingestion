@@ -1,0 +1,42 @@
+# Multi-Stage Distroless Dockerfile for Transaction Ingestion Service
+# Stage 1: Build & Unit Test
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /build
+
+# Install security certificates & build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code and compile statically
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s -X main.version=2.4.0 -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    -o /bin/transaction-ingestion-service ./cmd/server
+
+# Stage 2: Distroless Secure Minimal Runtime
+FROM gcr.io/distroless/static-debian12:nonroot
+
+LABEL maintainer="ShieldPay Platform Architecture Team <architecture@shieldpay.com>"
+LABEL service="transaction-ingestion-service"
+LABEL version="2.4.0"
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /bin/transaction-ingestion-service /app/transaction-ingestion-service
+
+# Explicit non-root user (USER 1000)
+USER 1000:1000
+
+# Service Port and Metrics Port
+EXPOSE 8080 9090
+
+# Health Check
+HEALTHCHECK --interval=5s --timeout=2s --retries=3 \
+    CMD ["/app/transaction-ingestion-service", "healthcheck"]
+
+ENTRYPOINT ["/app/transaction-ingestion-service"]

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package shieldpay.fraud.customerprofile;
+
+option go_package = "shieldpay/fraud/customerprofile/v1;customerprofilev1";
+option java_package = "com.shieldpay.fraud.customerprofile.v1";
+
+service CustomerProfileService {
+  rpc GetProfile (ProfileRequest) returns (ProfileResponse);
+  rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
+}
+
+message ProfileRequest {
+  string customer_id = 1;
+  string card_number_hash = 2;
+}
+
+message ProfileResponse {
+  string customer_id = 1;
+  double avg_amount_90d = 2;
+  double std_dev_amount_90d = 3;
+  int32 tx_count_90d = 4;
+  repeated string top_merchant_mccs = 5;
+  string home_country = 6;
+  string home_city = 7;
+  int64 account_vintage_days = 8;
+  string risk_tier = 9;
+}
+
+message UpdateProfileRequest {
+  string customer_id = 1;
+  string card_number_hash = 2;
+  double tx_amount = 3;
+  string mcc = 4;
+  int64 tx_timestamp = 5;
+}
+
+message UpdateProfileResponse {
+  bool success = 1;
+}

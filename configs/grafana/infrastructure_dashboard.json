@@ -1,0 +1,45 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": null,
+  "panels": [
+    {
+      "title": "Kafka Consumer Lag per Partition (fraud.transactions.raw)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (partition) (kafka_consumergroup_lag{topic=\"fraud.transactions.raw\"})", "legendFormat": "Partition {{partition}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Redis Cluster Hit Ratio & Latency",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) * 100", "legendFormat": "Hit Ratio %" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "Kubernetes Pod HPA Replica Scaling",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "kube_hpa_status_current_replicas{namespace=\"fraud-detection\"}", "legendFormat": "{{hpa}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Neo4j Graph Database Memory Allocation & Bolt Connections",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "neo4j_bolt_connections_open", "legendFormat": "Active Connections" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["infrastructure", "kafka", "redis", "kubernetes"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "ShieldPay - Distributed Infrastructure & Kafka Dashboard",
+  "version": 1
+}

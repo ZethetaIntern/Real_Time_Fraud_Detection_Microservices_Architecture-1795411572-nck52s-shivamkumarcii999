@@ -1,0 +1,21 @@
+graph TD
+    subgraph AnomalyDetectionService["Anomaly Detection Service (C4 Level 3)"]
+        GRPC_IN[gRPC Inference Server\n(AnomalyDetectionService.Score)]
+        FEAT_TRANS[Feature Vector Transformer\n(Standard scaler, one-hot encoder)]
+        FEAT_CLI[Redis Online Feature Store Client\n(Fetches 30/60/90-day profiles)]
+        ONNX_SESS[ONNX Runtime Multi-Model Session\n(XGBoost + Autoencoder + LSTM)]
+        ENSEMBLE_COMB[Ensemble Weight Combiner\n(Calculates blended ML risk score)]
+        SHAP_MOD[TreeSHAP Feature Explainer\n(Extracts Top-5 influential features)]
+        DRIFT_DAEMON[Drift Monitor Background Daemon\n(Hourly PSI & Kolmogorov-Smirnov test)]
+        METRIC_EXP[Prometheus Latency & Score Exporter]
+    end
+
+    GRPC_IN --> FEAT_TRANS
+    FEAT_TRANS <--> FEAT_CLI
+    FEAT_TRANS --> ONNX_SESS
+    ONNX_SESS --> ENSEMBLE_COMB
+    ENSEMBLE_COMB --> SHAP_MOD
+    ENSEMBLE_COMB --> DRIFT_DAEMON
+    ENSEMBLE_COMB --> METRIC_EXP
+    ENSEMBLE_COMB --> GRPC_IN
+    FEAT_CLI <-->|Sub-millisecond Read| REDIS[(Redis Feature Cache)]

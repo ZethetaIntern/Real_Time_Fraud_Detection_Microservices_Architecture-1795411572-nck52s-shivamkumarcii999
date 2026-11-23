@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    participant Client as Payment Channel / POS
+    participant Ingest as Transaction Ingestion
+    participant Scorer as Risk Scoring Engine
+    participant Orchestrator as Saga Orchestrator
+    participant CardService as Core Banking (CBS)
+    participant CaseService as Case Management
+    participant NotifService as Notification Service
+    participant AuditService as Merkle Audit Journal
+
+    Client->>Ingest: POST /api/v1/transactions
+    Ingest->>Scorer: Scatter-Gather Evaluation
+    Scorer-->>Ingest: Risk Score = 840 (Action: AUTO_DECLINE)
+    Ingest-->>Client: HTTP 200 (Decision: DECLINED)
+
+    Note over Orchestrator: Trigger Fraud Investigation Saga (Orchestrated)
+    Orchestrator->>CardService: Step 1: FreezeCard(card_hash)
+    CardService-->>Orchestrator: Card Frozen OK
+    Orchestrator->>CaseService: Step 2: CreateInvestigationCase(priority=P1)
+    CaseService-->>Orchestrator: Case #8192 Created
+    Orchestrator->>NotifService: Step 3: DispatchAlert(SMS + Push)
+
+    alt Notification Gateway Times Out
+        NotifService--xOrchestrator: Gateway Timeout (504)
+        Note over Orchestrator: Initiating Saga Compensating Transactions!
+        Orchestrator->>CaseService: Compensate: MarkCasePendingRetry(Case #8192)
+        Orchestrator->>CardService: Compensate: Leave Card in Temporary Protective Hold
+        Orchestrator->>AuditService: LogCompensationFailure(saga_id, error_reason)
+    else Notification Success
+        NotifService-->>Orchestrator: Alert Delivered OK
+        Orchestrator->>AuditService: Step 4: AppendAuditLog(saga_id, status=COMPLETE)
+        AuditService-->>Orchestrator: Merkle Root Hash Verified
+    end

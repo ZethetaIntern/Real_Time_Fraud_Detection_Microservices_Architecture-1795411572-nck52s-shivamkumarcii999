@@ -1,0 +1,19 @@
+graph TD
+    subgraph TransactionIngestion["Transaction Ingestion Service (C4 Level 3)"]
+        HTTP_HANDLER[REST Controller / Gin Router\n(POST /api/v1/transactions)]
+        ACL_ADAPTER[Anti-Corruption Layer\n(Translates ISO 8583 / UPI formats)]
+        VALIDATOR[OpenAPI Payload Schema Validator\n(Field bounds, Luhn check, types)]
+        ENRICHER[Device & Geo Enrichment Worker\n(Hashes PAN, IP ASN, Device FP)]
+        GRPC_CLIENTS[Scatter-Gather gRPC Client Pool\n(Calls Rule, ML, Graph services)]
+        KAFKA_PROD[Transactional Kafka Producer\n(Writes to fraud.transactions.raw)]
+        TIMES_REPO[TimescaleDB Repository\n(Appends raw financial ledger entries)]
+        HEALTH_MTR[Healthz Endpoint & Prometheus Exporter]
+    end
+
+    HTTP_HANDLER --> ACL_ADAPTER
+    ACL_ADAPTER --> VALIDATOR
+    VALIDATOR --> ENRICHER
+    ENRICHER --> GRPC_CLIENTS
+    ENRICHER --> KAFKA_PROD
+    ENRICHER --> TIMES_REPO
+    GRPC_CLIENTS -->|gRPC Parallel Calls| OUTSIDE[Downstream Detection Services]

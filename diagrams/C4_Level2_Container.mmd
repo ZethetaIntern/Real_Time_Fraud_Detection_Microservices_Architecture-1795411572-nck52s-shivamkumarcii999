@@ -1,0 +1,69 @@
+graph TD
+    subgraph Clients["Clients & Gateways"]
+        EXT_NET["External Payment Networks (Visa / RuPay / UPI)"]
+        ANALYST_UI["Case Management Web UI"]
+        ADMIN_UI["Rule & Risk Management Console"]
+    end
+
+    subgraph EdgeLayer["Edge Reverse Proxy"]
+        GATEWAY["Kong API Gateway\n- TLS 1.3 Termination\n- 5-Tier Rate Limiting\n- JWT RS256 Auth\n- Circuit Breaker"]
+    end
+
+    subgraph MicroservicesFabric["ShieldPay Microservices Mesh (Istio mTLS)"]
+        INGEST["transaction-ingestion-service\n(Go / Gin)"]
+        RULE_ENG["rule-engine-service\n(Java 21 / Spring Boot 3)"]
+        ML_SVC["anomaly-detection-service\n(Python / ONNX Runtime)"]
+        GRAPH_SVC["graph-analysis-service\n(Java / Quarkus / Neo4j OGM)"]
+        RISK_SCORING["risk-scoring-service\n(Go / gRPC Aggregator)"]
+        CASE_MGMT["case-management-service\n(Node.js / NestJS)"]
+        NOTIF_SVC["notification-service\n(Go Multi-Channel Workers)"]
+        AUDIT_SVC["audit-compliance-service\n(Rust Merkle Engine)"]
+        PROFILE_SVC["customer-profile-service\n(Python / FastAPI)"]
+        REF_DATA_SVC["reference-data-service\n(Go / gRPC)"]
+    end
+
+    subgraph EventBackbone["Asynchronous Event Streaming (Kafka 3.6)"]
+        KAFKA{{"Apache Kafka 3.6 (3 Brokers, Multi-AZ)\n- fraud.transactions.raw\n- fraud.transactions.enriched\n- fraud.alerts\n- fraud.decisions\n- fraud.audit.events\n- fraud.notifications.outbound\n- fraud.graph.updates\n- fraud.dlq"}}
+    end
+
+    subgraph Datastores["Specialized Polyglot Datastores"]
+        PG_LEDGER[("PostgreSQL 16 + TimescaleDB\n(Transaction Ledger & Cases)")]
+        REDIS_STORE[("Redis 7 Enterprise Cluster\n(Velocity Windows, Features & Rate Limits)")]
+        NEO4J_STORE[("Neo4j Clustered DB\n(Property Graph & Fraud Rings)")]
+        QLDB_STORE[("Immutable Ledger / Merkle Tree\n(Cryptographic Audit Journal)")]
+        ES_SEARCH[("Elasticsearch 8 / Kibana\n(Search Index & Observability)")]
+    end
+
+    EXT_NET --> GATEWAY
+    ANALYST_UI --> GATEWAY
+    ADMIN_UI --> GATEWAY
+
+    GATEWAY -->|REST to gRPC| INGEST
+    GATEWAY -->|REST| CASE_MGMT
+    GATEWAY -->|REST| RULE_ENG
+
+    INGEST -->|1. gRPC Parallel Evaluate| RULE_ENG
+    INGEST -->|2. gRPC Parallel Score| ML_SVC
+    INGEST -->|3. gRPC Parallel Traverse| GRAPH_SVC
+    INGEST -->|Publishes Raw & Enriched| KAFKA
+    INGEST -->|Writes ACID Ledger| PG_LEDGER
+
+    RULE_ENG -->|Submits Rule Flags| RISK_SCORING
+    ML_SVC -->|Submits ML Score| RISK_SCORING
+    GRAPH_SVC -->|Submits Ring Scores| RISK_SCORING
+
+    RULE_ENG <-->|Sliding Windows| REDIS_STORE
+    ML_SVC <-->|Online Features| REDIS_STORE
+    GRAPH_SVC <-->|Cypher Traversals| NEO4J_STORE
+
+    RISK_SCORING -->|Returns Decision <100ms| INGEST
+    RISK_SCORING -->|Publishes fraud.decisions| KAFKA
+
+    KAFKA -->|Consumes fraud.alerts| CASE_MGMT
+    KAFKA -->|Consumes notifications| NOTIF_SVC
+    KAFKA -->|Consumes all decisions| AUDIT_SVC
+    KAFKA -->|Consumes graph updates| GRAPH_SVC
+
+    CASE_MGMT --> PG_LEDGER
+    CASE_MGMT --> ES_SEARCH
+    AUDIT_SVC --> QLDB_STORE

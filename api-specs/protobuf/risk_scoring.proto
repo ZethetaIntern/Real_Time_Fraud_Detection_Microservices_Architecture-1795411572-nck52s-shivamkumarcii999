@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package shieldpay.fraud.riskscoring;
+
+import "common.proto";
+
+option go_package = "shieldpay/fraud/riskscoring/v1;riskscoringv1";
+option java_package = "com.shieldpay.fraud.riskscoring.v1";
+
+service RiskScoringService {
+  rpc ComputeScore (RiskScoringRequest) returns (RiskScoringResponse);
+}
+
+message RiskScoringRequest {
+  string transaction_id = 1;
+  string card_number_hash = 2;
+  int32 rule_score = 3;
+  double ml_anomaly_score = 4;
+  int32 graph_risk_score = 5;
+  repeated string triggered_rule_ids = 6;
+  string channel = 7;
+  string market = 8;
+}
+
+message DecisionExplanation {
+  string summary_text = 1;
+  repeated string key_drivers = 2;
+  double rule_weight = 3;
+  double ml_weight = 4;
+  double graph_weight = 5;
+}
+
+message RiskScoringResponse {
+  string transaction_id = 1;
+  int32 composite_risk_score = 2; // 0 to 1000
+  shieldpay.fraud.common.DecisionAction action = 3;
+  DecisionExplanation explanation = 4;
+  int64 computation_latency_micros = 5;
+}

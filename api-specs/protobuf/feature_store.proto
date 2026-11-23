@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package shieldpay.fraud.featurestore;
+
+option go_package = "shieldpay/fraud/featurestore/v1;featurestorev1";
+option java_package = "com.shieldpay.fraud.featurestore.v1";
+
+service FeatureStoreService {
+  rpc GetFeatures (FeatureRequest) returns (FeatureResponse);
+}
+
+message FeatureRequest {
+  string card_number_hash = 1;
+  repeated string requested_features = 2;
+}
+
+message FeatureValue {
+  string feature_name = 1;
+  double float_value = 2;
+  string string_value = 3;
+  int64 int_value = 4;
+}
+
+message FeatureResponse {
+  string card_number_hash = 1;
+  map<string, FeatureValue> features = 2;
+  int64 lookup_latency_micros = 3;
+}

@@ -1,0 +1,29 @@
+graph TB
+    subgraph Users["Platform Users & External Actors"]
+        Customer["Cardholder / Consumer\n(NFC, Mobile App, UPI, Online Web)"]
+        Analyst["Fraud Operations Analyst\n(Investigates Flagged Cases)"]
+        RiskOfficer["Chief Risk Officer / Policy Admin\n(Configures Rules & Oversees Models)"]
+        Auditor["Regulatory Auditor\n(RBI, FIU-IND, PCI SSC Assessor)"]
+    end
+
+    subgraph ShieldPayBoundary["ShieldPay Real-Time Fraud Detection Platform"]
+        FraudSystem["Real-Time Fraud Detection Microservices Platform\n- Sub-100ms Ingestion & Scoring\n- Tri-Layer Detection (Rules + ML + Graph)\n- Immutable Merkle Audit Journal"]
+    end
+
+    subgraph ExternalSystems["External Banking & Intelligence Ecosystem"]
+        PaymentSwitch["Payment Networks & Switches\n(Visa, Mastercard, RuPay, NPCI UPI)"]
+        CBS["Core Banking System (CBS)\n(Account Ledgers & Card Management)"]
+        Enrichment["Third-Party Intelligence\n(MaxMind GeoIP, ThreatMetrix Device IP)"]
+        Regulators["Regulatory Authorities\n(RBI Central Fraud Registry, FIU-IND STR)"]
+    end
+
+    Customer -->|Initiates Payment| PaymentSwitch
+    PaymentSwitch -->|POST /api/v1/transactions <100ms SLA| FraudSystem
+    FraudSystem -->|Risk Decision: Approve / Challenge / Decline| PaymentSwitch
+    FraudSystem -->|gRPC: Verify Balance & Freeze Card| CBS
+    FraudSystem -->|HTTPS: Fetch Device Fingerprint & IP Risk| Enrichment
+    FraudSystem -->|SMS / Push: OTP Challenge & Alerts| Customer
+    Analyst -->|HTTPS: Review Flagged Case Backlog| FraudSystem
+    RiskOfficer -->|HTTPS: Rule Authoring & Simulation| FraudSystem
+    FraudSystem -->|Automated FMR-1 / STR Filing| Regulators
+    Auditor -->|Cryptographic Merkle Audit Verification| FraudSystem

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-api-gateway-service
+  namespace: kong-gateway
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:ap-south-1:123456789012:certificate/xyz"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: https
+      port: 443
+      targetPort: 8443
+    - name: http
+      port: 80
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/name: kong

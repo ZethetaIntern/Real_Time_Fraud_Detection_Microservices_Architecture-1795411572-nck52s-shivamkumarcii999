@@ -1,0 +1,36 @@
+rate_limits:
+  tiers:
+    - name: "merchant_tier_1_large"
+      scope: "merchant"
+      limit: 1000
+      window_seconds: 1
+      redis_key: "rl:merchant:{merchant_id}:sec"
+      on_breach: "HTTP_429"
+
+    - name: "merchant_tier_2_standard"
+      scope: "merchant"
+      limit: 100
+      window_seconds: 1
+      redis_key: "rl:merchant:{merchant_id}:sec"
+      on_breach: "HTTP_429"
+
+    - name: "ip_anti_carding"
+      scope: "ip"
+      limit: 50
+      window_seconds: 60
+      redis_key: "rl:ip:{ip_hash}:min"
+      on_breach: "HTTP_429_GREYLIST"
+
+    - name: "global_cluster_capacity"
+      scope: "global"
+      limit: 50000
+      window_seconds: 1
+      redis_key: "rl:global:tps"
+      on_breach: "SHED_LOAD"
+
+    - name: "adaptive_attack_throttle"
+      scope: "adaptive"
+      trigger_condition: "merchant_fraud_rate_5m > 0.05"
+      throttle_factor: 0.50
+      window_seconds: 300
+      on_breach: "ALERT_AND_THROTTLE"

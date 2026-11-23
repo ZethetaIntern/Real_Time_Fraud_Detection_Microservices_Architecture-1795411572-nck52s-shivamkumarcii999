@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package shieldpay.fraud.common;
+
+option go_package = "shieldpay/fraud/common/v1;commonv1";
+option java_package = "com.shieldpay.fraud.common.v1";
+
+enum ChannelType {
+  CHANNEL_TYPE_UNSPECIFIED = 0;
+  CHANNEL_TYPE_POS = 1;
+  CHANNEL_TYPE_ECOM = 2;
+  CHANNEL_TYPE_ATM = 3;
+  CHANNEL_TYPE_UPI = 4;
+  CHANNEL_TYPE_MOBILE_APP = 5;
+}
+
+enum DecisionAction {
+  DECISION_ACTION_UNSPECIFIED = 0;
+  DECISION_ACTION_AUTO_APPROVE = 1;
+  DECISION_ACTION_STEP_UP_AUTH = 2;
+  DECISION_ACTION_MANUAL_REVIEW = 3;
+  DECISION_ACTION_AUTO_DECLINE = 4;
+}
+
+enum RuleSeverity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_LOW = 1;
+  SEVERITY_MEDIUM = 2;
+  SEVERITY_HIGH = 3;
+  SEVERITY_CRITICAL = 4;
+}
+
+message Money {
+  string currency_code = 1; // e.g. "INR", "USD"
+  int64 units = 2;          // whole units
+  int32 nanos = 3;          // fractional cents / paise
+}
+
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+  string city = 3;
+  string country_code = 4;  // ISO 3166-1 alpha-2
+  bool is_vpn = 5;
+  bool is_proxy = 6;
+  bool is_tor = 7;
+}
+
+message DeviceContext {
+  string device_fingerprint = 1;
+  string ip_address = 2;
+  string user_agent = 3;
+  string os = 4;
+  bool is_jailbroken = 5;
+}

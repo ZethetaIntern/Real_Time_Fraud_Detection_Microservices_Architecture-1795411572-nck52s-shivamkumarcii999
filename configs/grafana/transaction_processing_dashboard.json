@@ -1,0 +1,51 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Real-Time Transaction Throughput (TPS)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(http_requests_total{job=\"transaction-ingestion\"}[1m]))", "legendFormat": "TPS" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Authorization Pipeline Latency Percentiles (p50, p95, p99)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(transaction_duration_seconds_bucket[5m])) by (le)) * 1000", "legendFormat": "p50 (ms)" },
+        { "expr": "histogram_quantile(0.95, sum(rate(transaction_duration_seconds_bucket[5m])) by (le)) * 1000", "legendFormat": "p95 (ms)" },
+        { "expr": "histogram_quantile(0.99, sum(rate(transaction_duration_seconds_bucket[5m])) by (le)) * 1000", "legendFormat": "p99 (ms)" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "HTTP Response Status Distribution (2xx vs 4xx vs 5xx)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (status) (rate(http_requests_total[5m]))", "legendFormat": "{{status}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Payment Channel Volume Share (POS / ECOM / UPI)",
+      "type": "piechart",
+      "targets": [
+        { "expr": "sum by (channel) (rate(transaction_channel_total[5m]))", "legendFormat": "{{channel}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["shieldpay", "transactions", "real-time"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "ShieldPay - Real-Time Transaction Processing Dashboard",
+  "version": 1
+}

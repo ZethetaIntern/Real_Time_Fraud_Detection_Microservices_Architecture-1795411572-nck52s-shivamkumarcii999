@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package shieldpay.fraud.graphanalysis;
+
+import "common.proto";
+
+option go_package = "shieldpay/fraud/graphanalysis/v1;graphanalysisv1";
+option java_package = "com.shieldpay.fraud.graphanalysis.v1";
+
+service GraphAnalysisService {
+  rpc AnalyseRelationships (GraphAnalysisRequest) returns (GraphAnalysisResponse);
+}
+
+message GraphAnalysisRequest {
+  string transaction_id = 1;
+  string card_number_hash = 2;
+  string customer_id = 3;
+  string device_fingerprint = 4;
+  string ip_address = 5;
+  string merchant_id = 6;
+  string phone_hash = 7;
+}
+
+message GraphAnalysisResponse {
+  string transaction_id = 1;
+  int32 graph_risk_score = 2; // 0 to 1000
+  int32 degree_to_known_fraud = 3; // shortest hop count
+  double community_suspicion_score = 4;
+  bool part_of_fraud_ring = 5;
+  string matched_topology_pattern = 6; // e.g. "TRIANGULATION_RING"
+  repeated string shared_infrastructure_entities = 7;
+  int64 traversal_latency_micros = 8;
+}

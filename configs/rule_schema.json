@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ShieldPayFraudRuleSchema",
+  "description": "Validation schema for ShieldPay fraud detection rule definitions.",
+  "type": "object",
+  "required": [
+    "rule_id",
+    "version",
+    "rule_name",
+    "category",
+    "severity",
+    "effective_date",
+    "description",
+    "scope",
+    "conditions",
+    "action",
+    "performance_constraints"
+  ],
+  "properties": {
+    "rule_id": {
+      "type": "string",
+      "pattern": "^RULE_[A-Z]{3}_[0-9]{3}$"
+    },
+    "version": {
+      "type": "string"
+    },
+    "rule_name": {
+      "type": "string",
+      "minLength": 5
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "VELOCITY",
+        "AMOUNT",
+        "GEOGRAPHIC",
+        "MERCHANT_CATEGORY",
+        "WATCHLIST",
+        "BEHAVIOURAL",
+        "DEVICE_NETWORK"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["cardholder", "merchant", "terminal", "network", "device"]
+    },
+    "conditions": {
+      "type": "object"
+    },
+    "action": {
+      "type": "object",
+      "required": ["type", "delta"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["SCORE_ADJUST", "STEP_UP_AUTH", "BLOCK", "FLAG", "NOTIFY"]
+        },
+        "delta": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "method": {
+          "type": "string",
+          "enum": ["SMS_OTP", "IN_APP_BIOMETRIC", "CALL_CHALLENGE"]
+        },
+        "flag": {
+          "type": "boolean"
+        }
+      }
+    },
+    "performance_constraints": {
+      "type": "object",
+      "required": ["max_evaluation_time_ms"],
+      "properties": {
+        "max_evaluation_time_ms": {
+          "type": "integer",
+          "maximum": 50
+        }
+      }
+    }
+  }
+}

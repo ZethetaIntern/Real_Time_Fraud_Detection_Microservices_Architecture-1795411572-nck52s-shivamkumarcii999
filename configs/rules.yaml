@@ -1,0 +1,455 @@
+# ShieldPay Production Fraud Detection Rules
+# Schema Version: 1.0.0
+# Total Rules: 20
+# Categories: Velocity (5), Amount (3), Geographic (3), MCC (3), Watchlist (2), Behavioral (2), Device/Network (2)
+
+rules:
+  # ==========================================
+  # Category 1: Velocity Checks (5 rules)
+  # ==========================================
+  - rule_id: "RULE_VEL_001"
+    version: "1.2"
+    rule_name: "Rapid Card Velocity Spike"
+    category: "VELOCITY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when card is used more than 5 times within a 10-minute sliding window."
+    scope: "cardholder"
+    conditions:
+      field: "velocity.card.tx_count"
+      operator: "gt"
+      value: 5
+      temporal_window:
+        duration_seconds: 600
+        metric: "count"
+    action:
+      type: "SCORE_ADJUST"
+      delta: 250
+      flag: true
+    performance_constraints:
+      max_evaluation_time_ms: 10
+
+  - rule_id: "RULE_VEL_002"
+    version: "1.0"
+    rule_name: "Multi-Merchant Velocity Fanout"
+    category: "VELOCITY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when card is presented across more than 3 distinct merchants within 5 minutes."
+    scope: "cardholder"
+    conditions:
+      field: "velocity.card.distinct_merchants"
+      operator: "gt"
+      value: 3
+      temporal_window:
+        duration_seconds: 300
+        metric: "count"
+    action:
+      type: "STEP_UP_AUTH"
+      method: "SMS_OTP"
+      delta: 200
+    performance_constraints:
+      max_evaluation_time_ms: 10
+
+  - rule_id: "RULE_VEL_003"
+    version: "1.1"
+    rule_name: "Hourly Card Cumulative Spend Surge"
+    category: "VELOCITY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when cumulative card spend exceeds 200,000 INR within 60 minutes."
+    scope: "cardholder"
+    conditions:
+      field: "velocity.card.cumulative_amount"
+      operator: "gt"
+      value: 200000.00
+      temporal_window:
+        duration_seconds: 3600
+        metric: "sum"
+    action:
+      type: "STEP_UP_AUTH"
+      method: "IN_APP_BIOMETRIC"
+      delta: 300
+    performance_constraints:
+      max_evaluation_time_ms: 10
+
+  - rule_id: "RULE_VEL_004"
+    version: "1.0"
+    rule_name: "Extreme Hourly Transaction Count"
+    category: "VELOCITY"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when card transaction count exceeds 10 within 1 hour."
+    scope: "cardholder"
+    conditions:
+      field: "velocity.card.tx_count"
+      operator: "gt"
+      value: 10
+      temporal_window:
+        duration_seconds: 3600
+        metric: "count"
+    action:
+      type: "BLOCK"
+      delta: 400
+    performance_constraints:
+      max_evaluation_time_ms: 10
+
+  - rule_id: "RULE_VEL_005"
+    version: "1.0"
+    rule_name: "UPI Rapid Collect Request Spike"
+    category: "VELOCITY"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when an account receives more than 4 UPI collect requests within 15 minutes."
+    scope: "cardholder"
+    conditions:
+      field: "velocity.upi.collect_request_count"
+      operator: "gt"
+      value: 4
+      temporal_window:
+        duration_seconds: 900
+        metric: "count"
+    action:
+      type: "BLOCK"
+      delta: 500
+    performance_constraints:
+      max_evaluation_time_ms: 10
+
+  # ==========================================
+  # Category 2: Amount Thresholds (3 rules)
+  # ==========================================
+  - rule_id: "RULE_AMT_001"
+    version: "1.0"
+    rule_name: "High Value Domestic Transaction"
+    category: "AMOUNT"
+    severity: "MEDIUM"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers for any single domestic transaction exceeding 500,000 INR."
+    scope: "cardholder"
+    conditions:
+      field: "transaction.amount"
+      operator: "gt"
+      value: 500000.00
+    action:
+      type: "STEP_UP_AUTH"
+      method: "SMS_OTP"
+      delta: 150
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_AMT_002"
+    version: "1.0"
+    rule_name: "High Value International CNP Transaction"
+    category: "AMOUNT"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when an international CNP transaction exceeds 100,000 INR."
+    scope: "cardholder"
+    conditions:
+      and:
+        - field: "transaction.is_international"
+          operator: "eq"
+          value: true
+        - field: "transaction.amount"
+          operator: "gt"
+          value: 100000.00
+        - field: "transaction.channel"
+          operator: "in"
+          value: ["ECOM", "MOTO"]
+    action:
+      type: "STEP_UP_AUTH"
+      method: "IN_APP_BIOMETRIC"
+      delta: 250
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_AMT_003"
+    version: "1.3"
+    rule_name: "Amount Standard Deviation Outlier"
+    category: "AMOUNT"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when transaction amount is more than 5 standard deviations above cardholder 90-day mean."
+    scope: "cardholder"
+    conditions:
+      field: "transaction.amount_zscore"
+      operator: "gt"
+      value: 5.0
+    action:
+      type: "SCORE_ADJUST"
+      delta: 300
+      flag: true
+    performance_constraints:
+      max_evaluation_time_ms: 8
+
+  # ==========================================
+  # Category 3: Geographic Anomalies (3 rules)
+  # ==========================================
+  - rule_id: "RULE_GEO_001"
+    version: "2.0"
+    rule_name: "Impossible Travel Velocity Across Borders"
+    category: "GEOGRAPHIC"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when consecutive transactions originate in different countries with implied travel speed > 800 km/h."
+    scope: "cardholder"
+    conditions:
+      field: "location.implied_speed_kmh"
+      operator: "gt"
+      value: 800.0
+    action:
+      type: "BLOCK"
+      delta: 600
+    performance_constraints:
+      max_evaluation_time_ms: 8
+
+  - rule_id: "RULE_GEO_002"
+    version: "1.0"
+    rule_name: "FATF High Risk Jurisdiction"
+    category: "GEOGRAPHIC"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when transaction originates from an FATF-blacklisted or sanctioned jurisdiction."
+    scope: "network"
+    conditions:
+      field: "location.country_risk_tier"
+      operator: "eq"
+      value: "SANCTIONED"
+    action:
+      type: "BLOCK"
+      delta: 800
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_GEO_003"
+    version: "1.1"
+    rule_name: "First Time Foreign Country Transaction"
+    category: "GEOGRAPHIC"
+    severity: "MEDIUM"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when card is used in a foreign country not in cardholder 12-month travel profile."
+    scope: "cardholder"
+    conditions:
+      and:
+        - field: "location.is_foreign"
+          operator: "eq"
+          value: true
+        - field: "profile.in_travel_history"
+          operator: "eq"
+          value: false
+    action:
+      type: "STEP_UP_AUTH"
+      method: "SMS_OTP"
+      delta: 150
+    performance_constraints:
+      max_evaluation_time_ms: 8
+
+  # ==========================================
+  # Category 4: Merchant Category Code (MCC) (3 rules)
+  # ==========================================
+  - rule_id: "RULE_MCC_001"
+    version: "1.0"
+    rule_name: "First Time Gambling MCC Transaction"
+    category: "MERCHANT_CATEGORY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers on transaction at gambling merchant (MCC 7995) when cardholder has no prior gambling history."
+    scope: "merchant"
+    conditions:
+      and:
+        - field: "transaction.mcc"
+          operator: "eq"
+          value: "7995"
+        - field: "profile.historical_gambling_tx_count"
+          operator: "eq"
+          value: 0
+    action:
+      type: "STEP_UP_AUTH"
+      method: "IN_APP_BIOMETRIC"
+      delta: 200
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_MCC_002"
+    version: "1.0"
+    rule_name: "High Value Crypto Exchange Purchase"
+    category: "MERCHANT_CATEGORY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when transaction at crypto exchange (MCC 6051) exceeds 50,000 INR."
+    scope: "merchant"
+    conditions:
+      and:
+        - field: "transaction.mcc"
+          operator: "eq"
+          value: "6051"
+        - field: "transaction.amount"
+          operator: "gt"
+          value: 50000.00
+    action:
+      type: "STEP_UP_AUTH"
+      method: "SMS_OTP"
+      delta: 250
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_MCC_003"
+    version: "1.0"
+    rule_name: "Quasi-Cash & Wire Transfer Surge"
+    category: "MERCHANT_CATEGORY"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when wire transfer (MCC 4829) or quasi-cash (MCC 6050) exceeds 150,000 INR."
+    scope: "merchant"
+    conditions:
+      and:
+        - field: "transaction.mcc"
+          operator: "in"
+          value: ["4829", "6050"]
+        - field: "transaction.amount"
+          operator: "gt"
+          value: 150000.00
+    action:
+      type: "SCORE_ADJUST"
+      delta: 300
+      flag: true
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  # ==========================================
+  # Category 5: Watchlist Matching (2 rules)
+  # ==========================================
+  - rule_id: "RULE_WCH_001"
+    version: "1.0"
+    rule_name: "Compromised Breach Card Match"
+    category: "WATCHLIST"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Instantly blocks transaction if card PAN hash appears on dark web or card network breach bulletin."
+    scope: "cardholder"
+    conditions:
+      field: "watchlist.card_is_compromised"
+      operator: "eq"
+      value: true
+    action:
+      type: "BLOCK"
+      delta: 900
+    performance_constraints:
+      max_evaluation_time_ms: 3
+
+  - rule_id: "RULE_WCH_002"
+    version: "1.0"
+    rule_name: "Malicious IP / Botnet Subnet Match"
+    category: "WATCHLIST"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Instantly blocks transaction if client IP address is flagged on real-time botnet threat intelligence."
+    scope: "network"
+    conditions:
+      field: "watchlist.ip_is_malicious"
+      operator: "eq"
+      value: true
+    action:
+      type: "BLOCK"
+      delta: 850
+    performance_constraints:
+      max_evaluation_time_ms: 3
+
+  # ==========================================
+  # Category 6: Behavioural Anomalies (2 rules)
+  # ==========================================
+  - rule_id: "RULE_BEH_001"
+    version: "1.0"
+    rule_name: "Dormant Account Sudden High Value Spike"
+    category: "BEHAVIOURAL"
+    severity: "HIGH"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers when an account inactive for >180 days suddenly executes a transaction > 50,000 INR."
+    scope: "cardholder"
+    conditions:
+      and:
+        - field: "profile.days_since_last_tx"
+          operator: "gt"
+          value: 180
+        - field: "transaction.amount"
+          operator: "gt"
+          value: 50000.00
+    action:
+      type: "STEP_UP_AUTH"
+      method: "IN_APP_BIOMETRIC"
+      delta: 250
+    performance_constraints:
+      max_evaluation_time_ms: 6
+
+  - rule_id: "RULE_BEH_002"
+    version: "1.0"
+    rule_name: "Witching Hour High Value CNP"
+    category: "BEHAVIOURAL"
+    severity: "MEDIUM"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Triggers for high-value CNP transactions occurring between 02:00 AM and 04:30 AM local time."
+    scope: "cardholder"
+    conditions:
+      and:
+        - field: "transaction.hour_local"
+          operator: "between"
+          value: [2, 4]
+        - field: "transaction.channel"
+          operator: "eq"
+          value: "ECOM"
+        - field: "transaction.amount"
+          operator: "gt"
+          value: 40000.00
+    action:
+      type: "SCORE_ADJUST"
+      delta: 150
+      flag: true
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  # ==========================================
+  # Category 7: Device & Network Risks (2 rules)
+  # ==========================================
+  - rule_id: "RULE_DEV_001"
+    version: "1.0"
+    rule_name: "Jailbroken Device with Proxy / Tor"
+    category: "DEVICE_NETWORK"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Blocks transactions originating from jailbroken/rooted mobile devices utilizing Tor or anonymous proxies."
+    scope: "device"
+    conditions:
+      and:
+        - field: "device.is_jailbroken"
+          operator: "eq"
+          value: true
+        - or:
+            - field: "location.is_tor"
+              operator: "eq"
+              value: true
+            - field: "location.is_proxy"
+              operator: "eq"
+              value: true
+    action:
+      type: "BLOCK"
+      delta: 750
+    performance_constraints:
+      max_evaluation_time_ms: 5
+
+  - rule_id: "RULE_DEV_002"
+    version: "1.1"
+    rule_name: "Device Fingerprint Multi-Card Hopping"
+    category: "DEVICE_NETWORK"
+    severity: "CRITICAL"
+    effective_date: "2026-01-01T00:00:00Z"
+    description: "Blocks transactions from a single device fingerprint linked to more than 5 distinct cards in 24 hours."
+    scope: "device"
+    conditions:
+      field: "velocity.device.card_count_24h"
+      operator: "gt"
+      value: 5
+    action:
+      type: "BLOCK"
+      delta: 800
+    performance_constraints:
+      max_evaluation_time_ms: 7

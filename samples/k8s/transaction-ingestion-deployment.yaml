@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-ingestion-service
+  namespace: fraud-detection
+  labels:
+    app.kubernetes.io/name: transaction-ingestion-service
+    app.kubernetes.io/part-of: fraud-detection-platform
+    app.kubernetes.io/tier: tier-1-critical
+spec:
+  replicas: 6
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transaction-ingestion-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: transaction-ingestion-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: transaction-ingestion-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: service
+          image: shieldpay/transaction-ingestion-service:2.4.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "4Gi"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          envFrom:
+            - configMapRef:
+                name: transaction-ingestion-config
+            - secretRef:
+                name: transaction-ingestion-secrets
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transaction-ingestion-service
+  namespace: fraud-detection
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+  selector:
+    app.kubernetes.io/name: transaction-ingestion-service
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: transaction-ingestion-hpa
+  namespace: fraud-detection
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: transaction-ingestion-service
+  minReplicas: 6
+  maxReplicas: 32
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: External
+      external:
+        metric:
+          name: kafka_consumergroup_lag
+          selector:
+            matchLabels:
+              topic: fraud.transactions.raw
+        target:
+          type: Value
+          averageValue: 500m
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: transaction-ingestion-pdb
+  namespace: fraud-detection
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transaction-ingestion-service
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transaction-ingestion-netpol
+  namespace: fraud-detection
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: transaction-ingestion-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kong-gateway
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: detection-engine
+      ports:
+        - protocol: TCP
+          port: 9090
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kafka-system
+      ports:
+        - protocol: TCP
+          port: 9092

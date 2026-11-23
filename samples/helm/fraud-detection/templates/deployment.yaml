@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-transaction-ingestion
+  labels:
+    app: transaction-ingestion
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  replicas: {{ .Values.transactionIngestion.replicaCount }}
+  selector:
+    matchLabels:
+      app: transaction-ingestion
+  template:
+    metadata:
+      labels:
+        app: transaction-ingestion
+    spec:
+      containers:
+        - name: transaction-ingestion
+          image: "{{ .Values.transactionIngestion.image.repository }}:{{ .Values.transactionIngestion.image.tag }}"
+          imagePullPolicy: {{ .Values.transactionIngestion.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            {{- toYaml .Values.transactionIngestion.resources | nindent 12 }}

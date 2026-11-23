@@ -1,0 +1,30 @@
+graph TD
+    subgraph EdgeEntry["Edge Reverse Proxy"]
+        KONG[Kong Edge API Gateway]
+    end
+
+    subgraph ServiceMeshIstio["Istio Service Mesh Namespace: fraud-detection (Strict mTLS)"]
+        INGEST["transaction-ingestion-service\n(Envoy Sidecar Proxy)"]
+        RULE["rule-engine-service\n(Envoy Sidecar Proxy)"]
+        ANOMALY["anomaly-detection-service\n(Envoy Sidecar Proxy)"]
+        GRAPH["graph-analysis-service\n(Envoy Sidecar Proxy)"]
+        SCORING["risk-scoring-service\n(Envoy Sidecar Proxy)"]
+        NOTIF["notification-service\n(Envoy Sidecar Proxy)"]
+        CASE["case-management-service\n(Envoy Sidecar Proxy)"]
+        AUDIT["audit-compliance-service\n(Envoy Sidecar Proxy)"]
+    end
+
+    KONG == 1. Strict mTLS (JWT Verified) ==> INGEST
+    INGEST == 2. Strict mTLS ==> RULE
+    INGEST == 2. Strict mTLS ==> ANOMALY
+    INGEST == 2. Strict mTLS ==> GRAPH
+    RULE == 3. Strict mTLS ==> SCORING
+    ANOMALY == 3. Strict mTLS ==> SCORING
+    GRAPH == 3. Strict mTLS ==> SCORING
+    SCORING == 4. Strict mTLS ==> CASE
+    SCORING == 4. Strict mTLS ==> NOTIF
+    SCORING == 4. Strict mTLS ==> AUDIT
+
+    NOTIF -.x|Istio AuthorizationPolicy DENY| RULE
+    GRAPH -.x|Istio AuthorizationPolicy DENY| NOTIF
+    CASE -.x|Istio AuthorizationPolicy DENY| ANOMALY

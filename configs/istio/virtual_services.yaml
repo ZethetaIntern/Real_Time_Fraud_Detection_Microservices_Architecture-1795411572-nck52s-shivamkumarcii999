@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: anomaly-detection-canary
+  namespace: fraud-detection
+spec:
+  hosts:
+    - anomaly-detection-service.fraud-detection.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: anomaly-detection-service.fraud-detection.svc.cluster.local
+            subset: v1-champion
+          weight: 95
+        - destination:
+            host: anomaly-detection-service.fraud-detection.svc.cluster.local
+            subset: v2-challenger
+          weight: 5

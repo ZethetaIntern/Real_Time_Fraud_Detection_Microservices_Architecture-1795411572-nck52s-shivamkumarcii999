@@ -1,0 +1,27 @@
+# Multi-Stage Distroless Dockerfile for Risk Scoring Aggregator Service
+# Stage 1: Builder
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /build
+RUN apk add --no-cache git ca-certificates
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s -X main.version=2.4.0" \
+    -o /bin/risk-scoring-service ./cmd/server
+
+# Stage 2: Distroless Runtime
+FROM gcr.io/distroless/static-debian12:nonroot
+
+LABEL maintainer="ShieldPay Risk Engine Team"
+LABEL service="risk-scoring-service"
+LABEL version="2.4.0"
+
+WORKDIR /app
+COPY --from=builder /bin/risk-scoring-service /app/risk-scoring-service
+
+USER 1000:1000
+EXPOSE 8080 9090
+
+ENTRYPOINT ["/app/risk-scoring-service"]

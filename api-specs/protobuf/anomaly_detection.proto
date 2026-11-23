@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package shieldpay.fraud.anomalydetection;
+
+import "common.proto";
+
+option go_package = "shieldpay/fraud/anomalydetection/v1;anomalydetectionv1";
+option java_package = "com.shieldpay.fraud.anomalydetection.v1";
+
+service AnomalyDetectionService {
+  rpc Score (AnomalyScoreRequest) returns (AnomalyScoreResponse);
+}
+
+message AnomalyScoreRequest {
+  string transaction_id = 1;
+  string card_number_hash = 2;
+  double amount = 3;
+  string mcc = 4;
+  shieldpay.fraud.common.ChannelType channel = 5;
+  int32 hour_of_day = 6;
+  int32 day_of_week = 7;
+  bool is_weekend = 8;
+  shieldpay.fraud.common.GeoLocation location = 9;
+  shieldpay.fraud.common.DeviceContext device = 10;
+}
+
+message FeatureAttribution {
+  string feature_name = 1;
+  double feature_value = 2;
+  double shap_value = 3;
+}
+
+message AnomalyScoreResponse {
+  string transaction_id = 1;
+  double anomaly_probability = 2; // 0.0 to 1.0
+  int32 calibrated_score = 3;     // 0 to 1000
+  string model_version = 4;
+  repeated FeatureAttribution top_contributing_features = 5;
+  int64 inference_latency_micros = 6;
+}

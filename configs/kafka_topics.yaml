@@ -1,0 +1,84 @@
+# Apache Kafka Cluster & Topic Topology Configuration
+# Kafka Version: 3.6
+# Minimum In-Sync Replicas: 2
+
+cluster:
+  cluster_id: "shieldpay-fraud-prod"
+  brokers:
+    - id: 1
+      host: "kafka-1.shieldpay.internal:9092"
+      rack: "ap-south-1a"
+    - id: 2
+      host: "kafka-2.shieldpay.internal:9092"
+      rack: "ap-south-1b"
+    - id: 3
+      host: "kafka-3.shieldpay.internal:9092"
+      rack: "ap-south-1c"
+
+topics:
+  - name: "fraud.transactions.raw"
+    partitions: 32
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 2592000000 # 30 days
+      cleanup.policy: "delete"
+      compression.type: "zstd"
+
+  - name: "fraud.transactions.enriched"
+    partitions: 32
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 1209600000 # 14 days
+      cleanup.policy: "delete"
+      compression.type: "zstd"
+
+  - name: "fraud.alerts"
+    partitions: 16
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 5184000000 # 60 days
+      cleanup.policy: "delete"
+
+  - name: "fraud.decisions"
+    partitions: 32
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 7776000000 # 90 days
+      cleanup.policy: "delete"
+      compression.type: "zstd"
+
+  - name: "fraud.audit.events"
+    partitions: 16
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: -1 # Infinite retention (Immutable regulatory journal)
+      cleanup.policy: "compact"
+
+  - name: "fraud.notifications.outbound"
+    partitions: 16
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 604800000 # 7 days
+      cleanup.policy: "delete"
+
+  - name: "fraud.graph.updates"
+    partitions: 16
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 604800000 # 7 days
+      cleanup.policy: "delete"
+
+  - name: "fraud.dlq"
+    partitions: 8
+    replication_factor: 3
+    configs:
+      min.insync.replicas: 2
+      retention.ms: 7776000000 # 90 days
+      cleanup.policy: "delete"

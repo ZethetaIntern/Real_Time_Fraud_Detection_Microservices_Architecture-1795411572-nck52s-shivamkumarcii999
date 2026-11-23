@@ -1,0 +1,29 @@
+routes:
+  - path: "/api/v1/transactions"
+    method: "POST"
+    upstream: "http://transaction-ingestion-service.fraud-detection.svc.cluster.local:8080/api/v1/transactions"
+    plugins:
+      - name: "jwt"
+      - name: "rate-limiting"
+      - name: "request-transformer"
+      - name: "correlation-id"
+
+  - path: "/api/v1/cases"
+    method: "GET"
+    upstream: "http://case-management-service.fraud-detection.svc.cluster.local:3000/api/v1/cases"
+    plugins:
+      - name: "jwt"
+      - name: "rbac"
+
+  - path: "/api/v1/rules"
+    method: "GET,POST"
+    upstream: "http://rule-engine-service.fraud-detection.svc.cluster.local:8080/api/v1/rules"
+    plugins:
+      - name: "jwt"
+      - name: "rbac"
+
+  - path: "/api/v1/dashboard/metrics"
+    method: "GET"
+    upstream: "http://risk-scoring-service.fraud-detection.svc.cluster.local:8080/api/v1/dashboard/metrics"
+    plugins:
+      - name: "jwt"

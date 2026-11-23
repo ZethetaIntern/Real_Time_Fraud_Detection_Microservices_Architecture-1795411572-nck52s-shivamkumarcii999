@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package shieldpay.fraud.ruleengine;
+
+import "common.proto";
+
+option go_package = "shieldpay/fraud/ruleengine/v1;ruleenginev1";
+option java_package = "com.shieldpay.fraud.ruleengine.v1";
+
+service RuleEngineService {
+  rpc Evaluate (RuleEvaluationRequest) returns (RuleEvaluationResponse);
+  rpc SimulateRule (RuleSimulationRequest) returns (RuleSimulationResponse);
+}
+
+message RuleEvaluationRequest {
+  string transaction_id = 1;
+  string card_number_hash = 2;
+  shieldpay.fraud.common.Money amount = 3;
+  string merchant_id = 4;
+  string mcc = 5;
+  shieldpay.fraud.common.ChannelType channel = 6;
+  shieldpay.fraud.common.GeoLocation location = 7;
+  shieldpay.fraud.common.DeviceContext device = 8;
+  int64 timestamp_epoch_ms = 9;
+}
+
+message TriggeredRule {
+  string rule_id = 1;
+  string rule_name = 2;
+  shieldpay.fraud.common.RuleSeverity severity = 3;
+  int32 score_adjustment = 4;
+  string triggered_condition = 5;
+}
+
+message RuleEvaluationResponse {
+  string transaction_id = 1;
+  int32 total_rule_score = 2; // 0 to 1000
+  bool should_hard_block = 3;
+  bool should_step_up = 4;
+  repeated TriggeredRule triggered_rules = 5;
+  int64 evaluation_latency_micros = 6;
+}
+
+message RuleSimulationRequest {
+  string rule_yaml = 1;
+  int32 backtest_days = 2;
+}
+
+message RuleSimulationResponse {
+  int64 transactions_evaluated = 1;
+  int64 transactions_flagged = 2;
+  double detection_rate = 3;
+  double false_positive_rate = 4;
+  double estimated_annual_fraud_prevented_inr = 5;
+}

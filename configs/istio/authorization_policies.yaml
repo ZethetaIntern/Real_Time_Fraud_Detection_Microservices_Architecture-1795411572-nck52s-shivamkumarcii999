@@ -1,0 +1,33 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ingestion-to-detection-engines
+  namespace: fraud-detection
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: detection-engine
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/fraud-detection/sa/transaction-ingestion-sa"]
+      to:
+        - operation:
+            ports: ["9090"]
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-notification-to-detection
+  namespace: fraud-detection
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: detection-engine
+  action: DENY
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/fraud-detection/sa/notification-sa"]
